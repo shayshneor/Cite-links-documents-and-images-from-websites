@@ -1,0 +1,86 @@
+import os
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin, urlparse
+
+# פונקציה שמחזירה את כל הנתיבים מהאתר
+def get_paths_from_website(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        paths = []
+
+        for a_tag in soup.find_all('a', href=True):
+            href = a_tag['href']
+            parsed = urlparse(href)
+            if not parsed.netloc:  # אם זה נתיב יחסי
+                paths.append(href)
+
+        return paths
+    except Exception as e:
+        print(f"שגיאה בעת גישה לאתר: {e}")
+        return []
+
+# פונקציה שמחזירה את כל הקישורים המלאים באתר
+def get_all_links(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        links = set()
+
+        for a_tag in soup.find_all('a', href=True):
+            full_url = urljoin(url, a_tag['href'])
+            links.add(full_url)
+
+        return links
+    except Exception as e:
+        print(f"שגיאה בעת גישה לאתר: {e}")
+        return set()
+
+# פונקציה להורדת קבצים מסוג תמונות או PDF
+def download_file(url, download_folder):
+    try:
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+
+        content_type = response.headers.get('Content-Type', '')
+        if 'image' in content_type or 'pdf' in content_type:
+            filename = os.path.basename(urlparse(url).path)
+            if not filename:
+                print(f"דילוג על כתובת אתר לא חוקית: {url}")
+                return
+
+            filepath = os.path.join(download_folder, filename)
+            with open(filepath, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+            print(f"הקובץ הורד: {filename}")
+    except Exception as e:
+        print(f"שגיאה בהורדת הקובץ מכתובת {url}: {e}")
+
+# === הרצת התוכנית ===
+def main():
+    url = input("הזן את כתובת האתר: ").strip()
+
+    # צור תיקיה על שולחן העבודה
+    desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+    download_folder = os.path.join(desktop, "downloaded_files")
+    os.makedirs(download_folder, exist_ok=True)
+
+    # קבל והצג נתיבים
+    print("\nנתיבים שקיימים באתר:")
+    paths = get_paths_from_website(url)
+    for path in paths:
+        print(path)
+
+    # קבל את כל הקישורים
+    print("\nהורדת תמונות וקובצי PDF שנמצאו באתר...")
+    links = get_all_links(url)
+    for link in links:
+        download_file(link, download_folder)
+
+if __name__ == "__main__":
+    main()
