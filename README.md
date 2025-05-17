@@ -2,7 +2,7 @@
 It is a Python tool that scans a given website, finds all the paths and links on the page, and automatically downloads relevant files such as images and PDFs to a designated folder on your computer.
 
 🚀 Main capabilities
-🔎 Scan paths from <a href> tags on the main page of the site
+🔎 Scan paths from  tags on the main page of the site
 
 🌐 Retrieve all absolute URLs from the page
 
